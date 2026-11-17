@@ -1,0 +1,36 @@
+{
+  "files": 134,
+  "totalMiB": 46.77,
+  "videos": [
+    {
+      "clip": 1,
+      "originalBytes": 15778526,
+      "publishedBytes": 2173688
+    },
+    {
+      "clip": 2,
+      "originalBytes": 12791145,
+      "publishedBytes": 2501996
+    },
+    {
+      "clip": 3,
+      "originalBytes": 29024019,
+      "publishedBytes": 5568536
+    },
+    {
+      "clip": 4,
+      "originalBytes": 30492728,
+      "publishedBytes": 6124252
+    },
+    {
+      "clip": 5,
+      "originalBytes": 21300728,
+      "publishedBytes": 3639979
+    },
+    {
+      "clip": 6,
+      "originalBytes": 17008312,
+      "publishedBytes": 3426780
+    }
+  ]
+}

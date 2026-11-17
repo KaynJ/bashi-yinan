@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light">
+<base href="../v0.1/"><title>八十一难 · 白骨岭教学战</title>
+<link rel="stylesheet" href="scene.css?v=0.4"><link rel="stylesheet" href="../教学关_v0.5/teaching.css">
+<script src="scene-data.js?v=0.4" defer></script><script src="../教学关_v0.5/config.js" defer></script><script src="scene-model.js?v=0.4" defer></script><script src="scene-pointer.js?v=0.4" defer></script>
+<script src="runtime/grid.js?v=0.4" defer></script><script src="../教学关_v0.5/bone-encounter.js" defer></script><script src="../教学关_v0.5/engine.js" defer></script><script src="runtime/board.js?v=0.4" defer></script><script src="runtime/motion.js?v=0.4" defer></script><script src="runtime/wukong-motion.js?v=0.4" defer></script><script src="runtime/wukong-rig.js?v=0.4" defer></script><script src="runtime/party-assets.js?v=0.4" defer></script><script src="runtime/party-motion.js?v=0.4" defer></script><script src="runtime/party-rig.js?v=0.4" defer></script><script src="runtime/rig.js?v=0.4" defer></script><script src="runtime/ultimate-fx.js?v=0.4" defer></script>
+<script src="../教学关_v0.5/battle-adapter.js" defer></script><script src="../教学关_v0.5/bone-skin.js" defer></script><script src="../教学关_v0.5/battle-view.js" defer></script><script src="../教学关_v0.5/teaching-ui.js" defer></script><script src="../教学关_v0.5/formation-preview.js" defer></script><script src="../教学关_v0.5/scene.js" defer></script>
+</head>
+<body><div class="scene" id="scene">
+<header class="topbar">
+<div class="brand"><span class="seal">八<br>一</span><div><strong>八十一难</strong><small>序章 · 白骨岭</small></div></div>
+<div class="chapter"><small>教 学 关 卡</small><h1>白骨岭 · 初遇</h1></div>
+<div class="top-actions"><button id="grid-toggle" class="quiet" aria-pressed="true">格线 · 开</button></div>
+</header>
+<main class="play-layout">
+<section class="roster-zone" aria-label="敌阵与人物选择">
+<aside class="paper-panel lineup-panel" id="lineup-panel" aria-label="敌我阵容">
+<div class="side-heading"><span>敌我阵容</span><button class="side-close" data-close-side aria-label="收起阵容">×</button></div>
+<section class="panel-section encounter-panel" id="encounter-panel"><div class="panel-heading"><div><small>知己知彼</small><h2>白骨十字阵</h2></div><span id="enemy-count" class="count">5 / 5</span></div><div id="enemy-roster" class="enemy-roster"></div><p id="enemy-detail" class="enemy-detail"></p></section>
+<aside class="panel-section roster-panel" id="roster-panel" aria-label="人物上场页">
+<div class="panel-heading"><div><small>同行之人</small><h2>人物选择</h2></div><span class="count" id="party-count">5 / 5</span></div>
+<div class="role-filter" id="role-filter" role="group" aria-label="按职业筛选人物"></div>
+<div class="roster-grid" id="roster-grid" aria-label="人物列表，每行五个"></div>
+<p id="empty-filter" class="empty-filter" hidden>暂无此职业的同伴</p>
+<div class="selected-hero"><strong id="selected-name">悟空</strong><span id="selected-role">刺客</span><span id="selected-state">已上阵</span></div>
+<p class="panel-note">拖动人物到我方格子上场或换位</p>
+<button id="deployment-toggle" class="secondary">撤下悟空</button>
+<div class="combat-skills" id="combat-skills" aria-label="当前人物自动技能"><div class="combat-skill"><strong id="small-skill-name"></strong><span id="small-skill-cd">—</span><i><b id="small-skill-fill"></b></i></div><div class="combat-skill"><strong id="ultimate-skill-name"></strong><span id="ultimate-skill-cd">—</span><i><b id="ultimate-skill-fill"></b></i></div></div>
+</aside>
+<section id="unit-detail" class="unit-detail" aria-label="角色详细资料"></section>
+</aside>
+<button class="side-toggle" id="lineup-toggle" data-open="lineup-panel" aria-expanded="true">敌我阵容 <span>收起</span></button>
+<div class="left-underlay"><div id="battle-result" class="battle-result" hidden role="status"><small>白骨岭试炼</small><h2 id="battle-result-title"></h2><p id="battle-result-detail"></p><button id="battle-again" class="primary">再战一次</button><button id="battle-return" class="secondary">调整布阵</button></div><section class="panel-section tutorial-panel"><p class="tutorial-eyebrow">此战要诀 <span id="tutorial-progress">布阵准备</span></p><h3 id="tutorial-title">让八戒守住前排</h3><p id="tutorial-copy">拖动人物调整站位，法师与辅助留在后方。准备好后，开始这场试炼。</p><div class="tutorial-steps"><span data-goal="start">① 布阵开战</span><span data-goal="skills">② 观察技能</span><span data-goal="win">③ 击败敌阵</span></div></section><div class="battle-feed" id="battle-feed" hidden><small>战况</small><ol id="battle-events"></ol></div></div>
+<div class="battle-controls"><p class="field-hint" id="field-hint"></p><button class="primary" id="phase-toggle">开始教学战 <span>→</span></button>
+<div class="battle-utilities"><button id="battle-pause" class="secondary" disabled>暂停</button><label>速度 <select id="battle-speed"><option value="1">1×</option><option value="2">2×</option></select></label></div>
+</div>
+</section>
+<section class="arena" aria-label="俯视战场，上方敌方，下方我方">
+<div class="arena-caption" id="arena-state">◇　战 前 布 阵　◇</div>
+<div class="battle-statusbar"><span id="battle-status" role="status">师徒五人 · 白骨十字阵</span><time id="battle-time">00:00</time></div>
+<div class="field-wrap"><div class="field" id="field">
+<span class="territory enemy-label">敌阵</span><div class="board-grid" id="board-grid" role="group" aria-label="双方各五行五列"></div>
+<div class="divider"><span></span><small>山 风 为 界</small><span></span></div>
+<div class="party-units" id="party-units"></div><div id="battle-units" class="battle-units"></div><div id="battle-effects" class="battle-effects" aria-hidden="true"></div><span class="territory ally-label">我阵</span>
+
+</div></div>
+<p id="battle-asset-error" class="battle-asset-error" hidden role="alert">部分动作素材加载失败，已显示静态人物。</p>
+</section>
+<section class="right-zone" aria-label="法宝、战斗统计与装备">
+<aside class="paper-panel loadout-panel" id="loadout-panel" aria-label="法宝与装备">
+<div class="side-heading"><span>随行配置</span><button class="side-close" data-close-side aria-label="收起配置">×</button></div>
+<section class="panel-section item-panel treasure-panel" id="treasure-panel" open>
+<div class="panel-heading"><div><small>随行法宝</small><h2>法宝</h2></div><span class="count" id="treasure-count">已选 0</span><span class="caret" aria-hidden="true">⌄</span></div>
+<div class="panel-content"><p class="panel-note">随行配置预览 · 本次试战不计加成</p><div class="inventory-grid treasure-grid" id="treasure-grid" aria-label="法宝，每行五个"></div></div>
+</section>
+<section class="panel-section item-panel equipment-panel" id="equipment-panel" open>
+<div class="panel-heading"><div><small>随身装备</small><h2>装备</h2></div><span class="count" id="equipment-count">待配置 5</span><span class="caret" aria-hidden="true">⌄</span></div>
+<div class="panel-content"><p class="panel-note">拖到已上阵人物身上 · 本次试战不计加成</p><div class="inventory-grid equipment-grid" id="equipment-grid" aria-label="装备，每行五个，可拖动到人物"></div><p class="panel-note return-hint">头顶装备可拖回此处卸下</p></div>
+</section>
+</aside>
+<button class="side-toggle" id="loadout-toggle" data-open="loadout-panel" aria-expanded="true">法宝与装备 <span>收起</span></button>
+<div id="stats-slot" class="right-underlay"></div>
+</section>
+</main>
+<div class="mobile-dock"><button data-open="roster-panel">人物上场</button><button data-open="treasure-panel">法宝</button><button data-open="equipment-panel">装备</button><button id="mobile-enemy">敌阵</button></div>
+<footer class="designbar"><span>白骨岭教学战 <b>v0.5</b></span><div><label for="opacity">面板透光</label><input id="opacity" type="range" min="40" max="88" value="54"><output id="opacity-value">46%</output><button id="reset" class="quiet">还原布局</button></div><span>高位俯视 · 淡彩山石</span></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div><div class="drag-ghost" id="drag-ghost" hidden></div>
+</div></body></html>
