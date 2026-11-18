@@ -4,6 +4,12 @@
   const icon=id=>'<svg viewBox="0 0 52 60" aria-hidden="true" stroke="#8b7751" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">'+D.art[id]+'</svg>';
   let state=new URLSearchParams(window.location.search).get('demo')==='1'?M.demo():M.create();
   let armed=null,toastTimer,ignoreClickUntil=0,loadingBattle=false,battleRequest=0,lastUiTick=-1,lastBattleSeq=-1;
+  const fixedLoadout = D.equipment.every(item=>item.owner);
+  if (fixedLoadout) {
+    const notes = document.querySelectorAll('#equipment-panel .panel-note');
+    notes[0].textContent = '本命武器随身绑定';
+    notes[1].hidden = true;
+  }
   const current=()=>M.hero(state,state.selected);
   function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2400);}
   function report(result,success){if(!result.ok){toast(result.message);return false;}if(success)toast(success);return true;}
@@ -66,7 +72,7 @@
   function renderUnits(){
     $('party-units').innerHTML=state.heroes.filter(h=>h.row!==null).map(h=>{
       const gear=M.gear(state,h.id),hp=window.BattleModel.tutorialCharacter(h.id).hp;
-      return `<div class="unit ${h.id===state.selected?'selected':''}" data-unit="${h.id}" data-max-hp="${hp}" style="--col:${h.col};--row:${h.row}" role="button" tabindex="0" aria-label="${h.name}，${h.role}，已装备${gear.length}件"><img class="unit-art" src="assets/${h.id}.png" alt="${h.name}" draggable="false"><div class="head-hud"><span class="health-bar" role="img" aria-label="${h.name}生命值${hp}/${hp}"><i></i></span><div class="head-equipment">${gear.map(i=>`<button class="head-item" data-equip="${i.id}" title="${i.name} · 拖到其他人物或拖回装备栏；Delete 卸下" aria-label="${h.name}的${i.name}，可拖动或按Delete卸下" ${state.combat?'disabled':''}>${icon(i.icon)}</button>`).join('')}</div></div><span class="unit-name">${h.name}</span></div>`;
+      return `<div class="unit ${h.id===state.selected?'selected':''}" data-unit="${h.id}" data-max-hp="${hp}" style="--col:${h.col};--row:${h.row}" role="button" tabindex="0" aria-label="${h.name}，${h.role}，已装备${gear.length}件"><img class="unit-art" src="assets/${h.id}.png" alt="${h.name}" draggable="false"><div class="head-hud"><span class="health-bar" role="img" aria-label="${h.name}生命值${hp}/${hp}"><i></i></span><div class="head-equipment">${gear.map(i=>`<button class="head-item" ${i.owner ? 'disabled' : 'data-equip="'+i.id+'"'} title="${i.name}" aria-label="${h.name}的${i.name}${i.owner ? '，本命武器' : '，可拖动或按Delete卸下'}" ${state.combat?'disabled':''}>${icon(i.icon)}</button>`).join('')}</div></div><span class="unit-name">${h.name}</span></div>`;
     }).join('');
     document.querySelectorAll('.cell.active').forEach(c=>c.classList.remove('active'));
     const h=current();if(h.row!==null)document.querySelector(`[data-col="${h.col}"][data-row="${h.row}"]`)?.classList.add('active');
@@ -74,8 +80,8 @@
   function renderInventory(){
     $('treasure-grid').innerHTML=D.treasures.map(i=>`<div class="treasure-card compact-card ${state.treasures.has(i.id)?'checked':''}"><input type="checkbox" data-treasure="${i.id}" aria-label="随行法宝：${i.name}" ${state.treasures.has(i.id)?'checked':''} ${state.combat?'disabled':''}><button data-item="${i.id}" data-item-kind="treasure" aria-label="查看${i.name}详情">${icon(i.icon)}<span>${i.name}</span></button></div>`).join('');
     $('treasure-count').textContent='已选 '+state.treasures.size;
-    $('equipment-grid').innerHTML=D.equipment.map(i=>`<button class="equipment-card compact-card ${armed===i.id?'armed':''}" data-equip="${i.id}" data-item="${i.id}" data-item-kind="equipment" title="${i.name} · 点击详情，拖动装备" aria-label="查看${i.name}详情">${icon(i.icon)}<span>${i.name}</span>${state.owners[i.id]?`<small>已装备 · ${M.hero(state,state.owners[i.id]).name}</small>`:''}</button>`).join('');
-    $('equipment-count').textContent='待配置 '+D.equipment.filter(i=>state.owners[i.id]===null).length;
+    $('equipment-grid').innerHTML=D.equipment.map(i=>`<button class="equipment-card compact-card ${armed===i.id?'armed':''}" ${i.owner ? '' : 'data-equip="'+i.id+'"'} data-item="${i.id}" data-item-kind="equipment" title="${i.name} · ${i.owner ? '本命武器' : '点击详情，拖动装备'}" aria-label="查看${i.name}详情">${icon(i.icon)}<span>${i.name}</span>${state.owners[i.id]?`<small>已装备 · ${M.hero(state,state.owners[i.id]).name}</small>`:''}</button>`).join('');
+    $('equipment-count').textContent=fixedLoadout ? '已绑定 5 件' : '待配置 '+D.equipment.filter(i=>state.owners[i.id]===null).length;
   }
   function render(){
     renderRoster();renderUnits();renderInventory();
@@ -83,7 +89,7 @@
     formationPreview.sync(state);
     deploymentHealth.sync($('field'),'.party-units .health-bar,.bone-preview .health-bar');
     $('grid-toggle').disabled=state.combat;
-    $('phase-toggle').innerHTML=loadingBattle?'正在准备动作…':state.combat?'重新布阵 <span>↶</span>':'开始教学战 <span>→</span>';$('phase-toggle').disabled=loadingBattle;
+    $('phase-toggle').innerHTML=loadingBattle?'正在准备动作…':state.combat?'重新布阵 <span>↶</span>':'开始战斗 <span>→</span>';$('phase-toggle').disabled=loadingBattle;
     $('arena-state').textContent=state.combat?'◇　战 斗 布 局　◇':'◇　战 前 布 阵　◇';
     $('field-hint').textContent=armed?'点击战场中的人物，为其装备':state.combat?'自动移动与出招 · 点击头像查看技能':`已选${current().name} · ${current().row===null?'拖到我方空格上场':'拖动人物换位，也可点格子'}`;
     renderSkills(state.combat?combatView.battle:null);if(state.combat&&combatView.battle)renderBattleUI(combatView.battle,true);
@@ -147,7 +153,7 @@
     },
     end(session){
       if(session.source.hasPointerCapture?.(session.pointerId))session.source.releasePointerCapture(session.pointerId);
-      ignoreClickUntil=Date.now()+180;$('drag-ghost').hidden=true;$('drag-ghost').classList.remove('hero-ghost');scene.classList.remove('dragging-equipment','dragging-hero');clearDropPreview();
+      ignoreClickUntil=session.active ? Date.now()+180 : 0;$('drag-ghost').hidden=true;$('drag-ghost').classList.remove('hero-ghost');scene.classList.remove('dragging-equipment','dragging-hero');clearDropPreview();
     },
     tap(session){
       if(session.kind==='hero'){if(session.origin==='field')selectUnit(session.id);else{state.selected=session.id;window.TeachingUI.selectHero(session.id);render();}return;}

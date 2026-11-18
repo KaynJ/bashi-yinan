@@ -6,7 +6,7 @@
   'use strict';
   const ok=()=>({ok:true});
   const fail=message=>({ok:false,message});
-  function create(){return {heroes:D.heroes.map(h=>({...h})),selected:'wukong',filter:'全部',treasures:new Set(),owners:Object.fromEntries(D.equipment.map(i=>[i.id,null])),combat:false};}
+  function create(){return {heroes:D.heroes.map(h=>({...h})),selected:'wukong',filter:'全部',treasures:new Set(D.equipment.some(i=>i.owner) ? ['scroll'] : []),owners:Object.fromEntries(D.equipment.map(i=>[i.id,i.owner || null])),combat:false};}
   const hero=(s,id)=>s.heroes.find(h=>h.id===id);
   const visible=s=>s.heroes.filter(h=>s.filter==='全部'||h.role===s.filter);
   const gear=(s,id)=>D.equipment.filter(i=>s.owners[i.id]===id);
@@ -20,19 +20,21 @@
   }
   function assign(s,itemId,heroId){
     if(s.combat)return fail('请返回布阵后配置装备');
+    if(D.equipment.find(i=>i.id===itemId)?.owner)return fail('本命武器随身绑定');
     if(!Object.hasOwn(s.owners,itemId))return fail('装备不存在');
     const h=hero(s,heroId);if(!h||h.row===null)return fail('请拖到已经上阵的人物身上');
     s.owners[itemId]=heroId;return ok();
   }
   function unequip(s,itemId){
     if(s.combat)return fail('请返回布阵后调整装备');
+    if(D.equipment.find(i=>i.id===itemId)?.owner)return fail('本命武器随身绑定');
     if(!Object.hasOwn(s.owners,itemId))return fail('装备不存在');
     s.owners[itemId]=null;return ok();
   }
   function remove(s,id){
     if(s.combat)return fail('请返回布阵后撤下人物');
     const h=hero(s,id);if(!h)return fail('人物不存在');h.row=null;
-    for(const item of gear(s,id))s.owners[item.id]=null;
+    for(const item of gear(s,id))if(!item.owner)s.owners[item.id]=null;
     return ok();
   }
   function check(s,id,on){

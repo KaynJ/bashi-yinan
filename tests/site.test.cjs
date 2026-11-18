@@ -25,10 +25,11 @@ test('six movies keep required order and have streamable MP4 metadata',()=>{
   assert.ok(bytes.length>1024&&bytes.length<24*1024*1024);const moov=bytes.indexOf(Buffer.from('moov')),mdat=bytes.indexOf(Buffer.from('mdat'));assert.ok(moov>=0&&moov<mdat,`movie ${i} needs faststart`);
  }
 });
-test('guardian, posters and every Mandarin narration clip are included',()=>{
+test('guardian is present and story opens without a poster or synthesized narration',()=>{
+ const html=fs.readFileSync(path.join(home,'index.html'),'utf8');
  assert.ok(fs.statSync(path.join(home,'assets/guardian-bust-v1.png')).size>1000);
- for(const c of D.clips)assert.ok(fs.existsSync(path.join(home,c.poster)));
- for(const record of D.narration)assert.ok(fs.statSync(path.join(home,'assets/narration',record.id+'.mp3')).size>1000);
+ assert.doesNotMatch(html,/<video[^>]*id="story-video"[^>]*poster=|narration-audio/);
+ assert.equal(walk(web).filter(f=>f.endsWith('.mp3')).length,0);
 });
 test('required battle art and codex characters are present',()=>{
  for(const id of ['wukong','bajie','shaseng','tangseng','bailongma'])assert.ok(fs.existsSync(path.join(base,'assets',id+'.png')));

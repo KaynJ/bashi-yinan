@@ -3,15 +3,15 @@
   window.Campaign = { create };
   function create({ getState, persist, applySettings, transition, toast, onNarrationChange }) {
     const D = CampaignData, $ = selector => document.querySelector(selector);
-    const video = $('#story-video'), voice = $('#narration-audio'), frame = $('#battle-frame');
+    const video = $('#story-video'), frame = $('#battle-frame');
     const cloud = $('#cloud-guide'), focus = $('#guide-focus'), arrow = $('#guide-arrow');
     let scene = 'home', clip = 1, lesson = -1, changing = false, epoch = 0, intro = false;
     let dismissed = false, completed = false, waiting = '', taskDone = false, suspended = false;
     let frameWindow = null, frameDocument = null, frameAbort = null, monitor = null;
-    let nextAction = null, alternativeAction = null, currentRecord = null, currentVoiceId = null, introTimer = null;
-    let targetSelector = '', voiceCompletion = null, voiceWarning = false, wasRunning = false;
+    let nextAction = null, alternativeAction = null;
+    let targetSelector = '', wasRunning = false, tailLoop = false;
     let pausedByUser = false, lastWasPlaying = false, selectedRoute = null;
-    let formationDestination = { col: 1, row: 5 }, initialBajie = '';
+    let horseInspected = false;
     const history = [];
     const save = () => getState().slots[getState().activeSlot];
     const settings = () => getState().settings;
@@ -24,40 +24,20 @@
       if (phase !== 'prologue' && !getState().library.includes('bone')) getState().library.push('bone');
       persist();
     }
-    function stopVoice() {
-      voiceCompletion = null; voice.pause(); voice.removeAttribute('src'); voice.load();
-      clearTimeout(introTimer); introTimer = null;
-    }
     function settingsChanged(value = settings()) {
-      voice.volume = value.master / 100; voice.muted = !value.narration;
-      video.volume = value.master / 100; video.muted = !value.narration;
-      $('#story-audio').textContent = value.narration ? '语音 · 开' : '语音 · 关';
+      video.volume = value.master / 100;
+      video.muted = tailLoop || !value.narration;
+      $('#story-audio').textContent = value.narration ? '原声 · 开' : '原声 · 关';
       $('#story-audio').setAttribute('aria-pressed', String(value.narration));
-      $('#guide-voice').textContent = value.narration ? '重听' : '开启语音';
-      if (!value.narration && !voice.paused) voice.pause();
     }
-    function speak(id, onEnd) {
-      stopVoice(); settingsChanged(); voiceCompletion = onEnd || null;
-      if (!settings().narration) {
-        if (onEnd) introTimer = setTimeout(() => { if (!suspended && !pausedByUser) { voiceCompletion = null; onEnd(); } }, 5400);
-        return;
-      }
-      voice.src = 'assets/narration/' + id + '.mp3'; voice.load();
-      voice.play().catch(() => { /* The visible continue button is always available. */ });
-    }
-    voice.addEventListener('ended', () => { const action = voiceCompletion; voiceCompletion = null; if (!suspended && !pausedByUser) action?.(); });
-    voice.addEventListener('error', () => {
-      if (!voice.getAttribute('src')) return;
-      if (!voiceWarning) { toast('旁白暂时无法播放，可阅读文字并点击继续。'); voiceWarning = true; }
-    });
     function hideGuide() {
       cloud.hidden = true; $('#story-stage').classList.remove('guide-open');
       $('#battle-stage').classList.remove('guided'); focus.hidden = true; arrow.toggleAttribute('hidden', true);
-      targetSelector = ''; stopVoice();
+      targetSelector = '';
     }
-    function showGuide(record, { label = '', target = '', next = null, nextLabel, task = '', required = false, alternative = null, voiceId } = {}) {
-      stopVoice(); currentRecord = record; targetSelector = target; taskDone = !required;
-      nextAction = next; alternativeAction = alternative; cloud.hidden = false;
+    function showGuide(record, { label = '', target = '', next = null, nextLabel, task = '', required = false, alternative = null } = {}) {
+        targetSelector = target; taskDone = !required;
+      $('#guide-next').hidden = false; nextAction = next; alternativeAction = alternative; cloud.hidden = false;
       cloud.dataset.record = record.id || '';
       $('#story-stage').classList.toggle('guide-open', scene === 'story');
       $('#battle-stage').classList.toggle('guided', scene === 'battle');
@@ -70,15 +50,7 @@
       $('#guide-alternative').hidden = !alternative;
       $('#guide-alternative').textContent = record.alternative || '沿用当前阵容';
       cloud.classList.remove('task-ready');
-      currentVoiceId = voiceId || (scene === 'story' ? 'clip-' + clip : D.narration.some(n => n.id === record.id) ? record.id : null);
-      $('#guide-voice').hidden = !currentVoiceId;
-      if (voiceId) speak(voiceId);
       requestAnimationFrame(() => { ensureTarget(); updatePointer(); });
-    }
-    function completeTask(message) {
-      if (taskDone) return;
-      taskDone = true; cloud.classList.add('task-ready');
-      $('#guide-task').textContent = message; $('#guide-next').disabled = !nextAction;
     }
     function setScene(next) {
       scene = next; suspended = false; pausedByUser = false;
@@ -91,7 +63,7 @@
     async function change(action) {
       if (changing) return false;
       changing = true; $('#story-next').disabled = true;
-      stopVoice(); video.pause(); hideGuide();
+       video.pause(); hideGuide();
       try { await transition(action); return true; }
       finally { changing = false; $('#story-next').disabled = false; }
     }
@@ -113,7 +85,9 @@
         setScene('story'); frame.removeAttribute('src'); frameWindow = frameDocument = null;
         checkpoint(id <= 4 ? 'prologue' : 'aftermath', id);
         history.push(id); $('#story-chapter').textContent = '序章 · ' + record.title;
-        video.controls = false; video.poster = record.poster;
+        $('#story-stage').prepend(video); tailLoop = false; intro = false;
+        $('#story-next').hidden = $('#story-pause').hidden = false;
+        settingsChanged(); video.controls = false;
         video.setAttribute('aria-label', record.title);
         video.src = '../../02_视频生成/序章/04_采用片段/' + id + '.mp4'; video.load();
         $('#story-state').hidden = true; $('#story-replay').hidden = true;
@@ -121,46 +95,52 @@
         if (!ok) { $('#story-state').hidden = false; $('#story-state').textContent = '本段暂时无法播放，可点击“跳过本段”继续。'; }
       });
       if (!changed || session !== epoch || scene !== 'story') return;
-      intro = true;
-      const begin = () => beginMovie(session);
-      showGuide(record, { label: `序章旁白 · ${id} / 6`, next: begin, nextLabel: '继续剧情' });
-      speak('clip-' + id, begin);
-      $('#story-pause').textContent = '暂停'; $('#guide-next').focus({ preventScroll: true });
+      beginMovie();
     }
-    function beginMovie(session = epoch) {
-      if (session !== epoch || scene !== 'story' || suspended || changing) return;
-      intro = false; pausedByUser = false; hideGuide(); $('#story-pause').textContent = '暂停';
+    function beginMovie() {
+      if (scene !== 'story' || suspended) return;
+      $('#story-pause').textContent = '暂停';
       video.play().catch(() => { $('#story-replay').hidden = false; });
+    }
+    function loopTail() {
+      if (!Number.isFinite(video.duration)) return;
+      video.currentTime = Math.max(0, video.duration - 1);
+      video.muted = true;
+      if (!suspended) video.play().catch(() => {});
+    }
+    function finishMovie() {
+      if (tailLoop) { loopTail(); return; }
+      if (scene !== 'story' || changing || intro) return;
+      if (clip === 3) { advanceClip(); return; }
+      intro = true; video.pause();
+      $('#story-next').hidden = $('#story-pause').hidden = $('#story-replay').hidden = true;
+      $('#story-state').hidden = true;
+      if (clip === 6) { tailLoop = true; loopTail(); }
+      showGuide(D.clips[clip-1], { label: '序章 · ' + (clip === 4 ? '3–4' : clip) + ' / 6', next: advanceClip,
+        nextLabel: clip === 4 ? '进入教学' : clip === 6 ? '选择同伴' : '继续剧情' });
+      $('#guide-next').focus({preventScroll:true});
     }
     async function advanceClip() {
       if (changing || scene !== 'story') return;
-      stopVoice(); video.pause();
+      if (!tailLoop) video.pause();
       if (clip === 4) await openBattle();
       else if (clip === 6) await openWorlds();
       else await playClip(clip + 1);
     }
-    video.addEventListener('ended', advanceClip);
-    $('#story-next').addEventListener('click', advanceClip);
+    video.addEventListener('ended', finishMovie);
+    $('#story-next').addEventListener('click', finishMovie);
     $('#story-replay').addEventListener('click', () => { $('#story-replay').hidden = true; beginMovie(); });
     $('#story-pause').addEventListener('click', togglePause);
     function togglePause() {
       if (scene !== 'story' || changing) return;
       pausedByUser = !pausedByUser;
       $('#story-pause').textContent = pausedByUser ? '继续' : '暂停';
-      if (pausedByUser) { video.pause(); voice.pause(); clearTimeout(introTimer); }
-      else if (intro) {
-        if (settings().narration && voice.getAttribute('src') && !voice.ended) voice.play().catch(() => {});
-        else beginMovie();
-      } else video.play().catch(() => { $('#story-replay').hidden = false; });
+      if (pausedByUser) video.pause();
+      else beginMovie();
     }
-    $('#story-audio').addEventListener('click', () => { onNarrationChange(!settings().narration); settingsChanged(); if (intro && !pausedByUser) { if (settings().narration) speak('clip-' + clip, () => beginMovie()); else speak('', () => beginMovie()); } });
+    $('#story-audio').addEventListener('click', () => onNarrationChange(!settings().narration));
     $('#guide-next').addEventListener('click', () => { if (!$('#guide-next').disabled && !changing) nextAction?.(); });
     $('#guide-alternative').addEventListener('click', () => alternativeAction?.());
-    $('#guide-voice').addEventListener('click', () => {
-      if (!settings().narration) onNarrationChange(true);
-      if (scene === 'story') { pausedByUser = false; $('#story-pause').textContent='暂停'; speak('clip-' + clip, () => beginMovie()); }
-      else if (currentVoiceId) speak(currentVoiceId);
-    });
     async function waitForFrame(session) {
       for (let i = 0; i < 200; i++) {
         if (session !== epoch || scene !== 'battle') return false;
@@ -188,15 +168,17 @@
       frameDocument.addEventListener('click', event => {
         if (scene !== 'battle' || dismissed) return;
         const element = event.target.closest('button');
-        if (element?.id === 'phase-toggle' && lesson < 5 && !completed) {
+        if (element?.id === 'phase-toggle' && lesson < 7 && !completed) {
           event.preventDefault(); event.stopImmediatePropagation(); toast('先随守护者看完布阵要点，或点击“略过讲解”。'); return;
         }
-        if (lesson === 1 && event.target.closest('[data-enemy="bone-boss"]')) completeTask('已查看白骨精的招式');
-        if (lesson === 2 && event.target.closest('[data-hero="bajie"]')) completeTask('已认识前排坦克八戒');
+        if (lesson === 2 && event.target.closest('#roster-grid [data-hero="bailongma"]')) horseInspected = true;
+        if (lesson === 1 && event.target.closest('#enemy-roster [data-enemy="bone-boss"]')) {
+          requestAnimationFrame(() => { if (lesson === 1) enterLesson(2); });
+        }
       }, { capture: true, signal: frameAbort.signal });
-      frameDocument.addEventListener('pointerdown', event => {
-        if (!dismissed && lesson === 2 && event.target.closest('[data-hero="bajie"]')) completeTask('已认识前排坦克八戒');
-      }, { capture: true, signal: frameAbort.signal });
+      frameDocument.addEventListener('pointerup', event => {
+        if (lesson === 2 && event.target.closest('#roster-grid [data-hero="bailongma"]')) horseInspected = true;
+      }, { capture:true, signal:frameAbort.signal });
       frameDocument.addEventListener('keydown', event => {
         if (event.key === 'Escape') { event.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); }
       }, { signal: frameAbort.signal });
@@ -207,34 +189,32 @@
     function resumeBattle() { if (battle()?.status === 'paused') review().view.pause(); }
     function enterLesson(index) {
       if (scene !== 'battle' || suspended || index < 0 || index >= D.lessons.length) return;
+      if (index === 2) horseInspected = false;
       dismissed = false; lesson = index; waiting = ''; pauseBattle();
       const source = D.lessons[index], record = { ...source };
       $('#guide-toggle').textContent = '略过讲解';
-      $('#battle-guide-status').textContent = `守护者引导 · ${index + 1} / ${D.lessons.length}`;
-      if (index === 3) {
-        const units = review().state.heroes;
-        const empty = [1,2,3,0,4].find(col => !units.some(u => u.col === col && u.row === 5));
-        formationDestination = { col: empty ?? 1, row: 5 };
-        const unit = units.find(u => u.id === 'bajie'); initialBajie = `${unit.col},${unit.row}`;
-        record.target = `.board-grid>.cell[data-col="${formationDestination.col}"][data-row="5"]`;
-      }
-      if ([4,7].includes(index)) frameDocument.querySelector('[data-hero="wukong"]')?.click();
+      $('#battle-guide-status').textContent = `守护者引导 · ${index + 1} / 11`;
+      const required = [1,2,3,7].includes(index);
+      if (index === 3) record.target = '#board-grid [data-col="2"][data-row="6"]';
       let next = () => enterLesson(index + 1);
-      if ([6,7,8].includes(index)) next = () => {
-        waiting = index === 6 ? 'cooldowns' : index === 7 ? 'controls' : 'result';
-        hideGuide(); $('#guide-toggle').textContent = '展开引导';
-        $('#battle-guide-status').textContent = '观察同伴自动行动'; resumeBattle();
+      if (index === 9) next = () => {
+        waiting = 'result'; hideGuide(); resumeBattle();
+        $('#guide-toggle').textContent = '展开引导';
       };
-      const required = [1,2,3,5].includes(index);
-      showGuide(record, { label: `教学 · ${index + 1} / ${D.lessons.length}`, target: record.target, next: index === 5 ? null : next, required, task: record.task || '讲解时战斗已暂停，可以慢慢看。', alternative: index === 3 ? () => enterLesson(4) : null, voiceId: record.id });
+      showGuide(record, { label: `教学 · ${index+1} / 11`, target: record.target, next: required ? null : next,
+        required, task: index === 3 ? '将白龙马移至箭头所指的中央格，可拖动或点格。' : '' });
+      $('#guide-next').hidden = required;
       const start = frameDocument.querySelector('#phase-toggle');
-      if (start && !review().state.combat) start.disabled = index < 5;
+      if (start && !review().state.combat) start.disabled = index < 7;
     }
     function ensureTarget() {
       if (!targetSelector || !frameDocument || scene !== 'battle') return;
       const target = frameDocument.querySelector(targetSelector); if (!target) return;
       const ui = frameWindow.TeachingUI;
-      if (target.closest('#lineup-panel') || target.closest('.battle-controls')) ui?.openPanel('lineup-panel', { toggle: false });
+      if (frameWindow.innerWidth <= 700 && target.closest('#roster-panel,#encounter-panel,#equipment-panel')) {
+        ui?.openPanel(target.closest('#roster-panel,#encounter-panel,#equipment-panel').id,{toggle:false});
+      } else if (target.closest('#stats-panel')) ui?.openPanel('stats-panel', {toggle:false});
+      else if (target.closest('#lineup-panel') || target.closest('.battle-controls')) ui?.openPanel('lineup-panel', { toggle: false });
       else if (target.closest('#loadout-panel,#stats-panel')) ui?.openPanel('loadout-panel', { toggle: false });
       else if (frameWindow.innerWidth <= 700) ui?.closePanels();
       target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -265,22 +245,49 @@
         if (b?.status === 'won' && !completed) { completed = true; waiting = ''; checkpoint('aftermath', 5); showResult(); return; }
         if (b && ['lost','timeout'].includes(b.status) && !completed) { completed = true; showFailure(); return; }
         if (dismissed) return;
-        if (lesson === 2 && review().state.selected === 'bajie') completeTask('已认识前排坦克八戒');
-        if (lesson === 3 && !taskDone) {
-          const unit = review().state.heroes.find(u => u.id === 'bajie');
-          if (`${unit.col},${unit.row}` !== initialBajie && unit.col === formationDestination.col && unit.row === 5) completeTask('八戒已到前排，站位记录完成');
+        if (lesson === 2 && review().state.selected === 'bailongma' && horseInspected) { enterLesson(3); return; }
+        const horse = review().state.heroes.find(u => u.id === 'bailongma');
+        if (lesson === 3 && horse.col === 2 && horse.row === 6) { enterLesson(4); return; }
+        if (lesson === 7 && b?.status === 'running' && !waiting) {
+          waiting = 'midfight'; hideGuide(); $('#guide-toggle').textContent = '展开引导';
         }
-        if (lesson === 5 && b?.status === 'running') { enterLesson(6); return; }
-        if (waiting === 'cooldowns' && b?.time >= 7) { enterLesson(7); return; }
-        if (waiting === 'controls' && b?.time >= 14) { enterLesson(8); return; }
+        if (waiting === 'midfight' && b?.status === 'running') {
+          const enemies = b.units.filter(unit => unit.team === 'enemy');
+          const hp = enemies.reduce((total, unit) => total + Math.max(0, unit.hp), 0);
+          const maxHp = enemies.reduce((total, unit) => total + unit.maxHp, 0);
+          if (hp <= maxHp * .5 || b.time >= 25) { enterLesson(8); return; }
+        }
         if (!b && !review().state.combat) {
-          const start = frameDocument.querySelector('#phase-toggle'); if (start) start.disabled = lesson < 5;
+          const start = frameDocument.querySelector('#phase-toggle'); if (start) start.disabled = lesson < 7;
         }
       }, 75);
     }
+    function recruitBone() {
+      if (frameDocument.querySelector('#bone-companion')) return;
+      frameWindow.TeachingUI.openPanel('roster-panel', {toggle:false});
+      const card = frameDocument.createElement('div');
+      card.id = 'bone-companion'; card.className = 'hero-card';
+      const portrait = frameDocument.createElement('img');
+      portrait.src = frameWindow.BoneSkin.paths['boss-body'];
+      card.append(portrait, '白骨精');
+      frameDocument.querySelector('#roster-grid').after(card);
+      card.style.cssText = 'width:60px;text-align:center';
+      card.scrollIntoView({block:'nearest'});
+      const dest = portrait.getBoundingClientRect();
+      const dx = frame.clientWidth/2 - dest.left - dest.width/2;
+      const dy = frame.clientHeight/2 - dest.top - dest.height/2;
+      if (!isReduced()) {
+        const sprite = portrait.cloneNode();
+        sprite.style.cssText = 'position:fixed;pointer-events:none;z-index:120;width:64px;height:80px;object-fit:contain;left:'+ (dest.left+dest.width/2-32)+'px;top:'+(dest.top+dest.height/2-40)+'px';
+        frameDocument.body.append(sprite);
+        const start = 'translate('+dx+'px,'+dy+'px) scale(2.4)';
+        sprite.animate([{transform:start},{transform:start,offset:.35},{transform:'scale(.5)'}],{duration:1400,easing:'ease-in-out'}).finished.finally(()=>sprite.remove());
+      }
+    }
     function showResult() {
+      recruitBone();
       $('#guide-toggle').textContent = '教学完成'; $('#battle-guide-status').textContent = '白骨阵已破 · 继续战后剧情';
-      showGuide(D.result, { label: '教学完成', next: () => playClip(5), nextLabel: '继续故事', task: '旅程已记录。下一段：天地裂变。', voiceId: 'victory' });
+      showGuide(D.result, { label: '教学 · 11 / 11', next: () => playClip(5), nextLabel: '继续故事', task: '旅程已记录。下一段：天地裂变。' });
     }
     function showFailure() {
       showGuide({id:'failure',title:'重整阵形，再来便是',text:'让八戒守住前排，唐僧和白龙马留在后方，再留意敌人的整列攻击。此战可以重试，不必急着赶路。'}, {
@@ -297,20 +304,25 @@
         resumeBattle();
       } else {
         dismissed = false;
-        enterLesson(battle() ? Math.max(6, Math.min(8, lesson)) : Math.max(0, Math.min(5, lesson)));
+        enterLesson(battle() ? Math.max(8, Math.min(9, lesson)) : Math.max(0, Math.min(7, lesson)));
       }
     });
     async function openWorlds() {
       ++epoch; stopMonitor();
-      const changed = await change(() => {
-        setScene('worlds'); checkpoint('worlds', 6); history.push('worlds');
+      hideGuide();
+        setScene('worlds');
+        $('#gate-landscape').prepend(video);
+        if (!tailLoop) {
+          tailLoop = true;
+          video.src = '../../02_视频生成/序章/04_采用片段/6.mp4';
+          video.addEventListener('loadedmetadata', () => { if (scene === 'worlds') loopTail(); }, {once:true});
+          video.load();
+        } else if (video.paused) loopTail();
+        checkpoint('worlds', 6); history.push('worlds');
         selectedRoute = save()?.route || null;
         $('#world-gates').innerHTML = D.gates.map(g => `<button class="world-gate" data-route="${g.id}" aria-label="追寻${g.name}" aria-pressed="${selectedRoute===g.id}" style="--gate-color:${g.color}"><span>${g.name}</span></button>`).join('');
         $('#route-strip').innerHTML = D.gates.map(g => `<button class="route-button" data-route="${g.id}" aria-pressed="${selectedRoute===g.id}" style="--gate-color:${g.color}">${g.name}<small>${g.role}</small></button>`).join('');
         positionGates();
-      });
-      if (!changed) return;
-      showGuide({id:'worlds',title:'先追寻谁的踪迹？',text:'五道漩涡通向不同的去处。点选一位同伴，记下你想追寻的方向。'}, {label:'五涡之间',next:selectedRoute?recordRoute:null,nextLabel:'记下追寻方向',task:'选择只决定先追寻谁，你仍是此间的守护者。',voiceId:'worlds'});
     }
     function positionGates() {
       if (scene !== 'worlds') return;
@@ -332,20 +344,18 @@
       showGuide({id:'route-preview',title:`追寻${gate.name}`,text:gate.summary+'此时的选择，是先追寻谁的踪迹，并不是变成那位同伴。'},{label:gate.role,next:recordRoute,nextLabel:'记下追寻方向',task:'确认后记录方向；同伴与世界的后续故事待续。'});
     });
     function suspend() {
-      suspended = true; wasRunning = battle()?.status === 'running'; lastWasPlaying = scene === 'story' && !video.paused;
-      video.pause(); voice.pause(); clearTimeout(introTimer); pauseBattle(); focus.hidden = true; arrow.toggleAttribute('hidden', true);
+      suspended = true; wasRunning = battle()?.status === 'running'; lastWasPlaying = !video.paused;
+      video.pause(); pauseBattle(); focus.hidden = true; arrow.toggleAttribute('hidden', true);
     }
     function resume() {
       suspended = false;
-      if (scene === 'story' && !pausedByUser) {
-        if (intro) { if (settings().narration && voice.getAttribute('src') && !voice.ended) voice.play().catch(()=>{}); else beginMovie(); }
-        else if (lastWasPlaying) video.play().catch(()=>{$('#story-replay').hidden=false;});
-      }
+      if (lastWasPlaying && !pausedByUser && (scene === 'story' || scene === 'worlds'))
+        video.play().catch(()=>{ if(scene==='story') $('#story-replay').hidden=false; });
       if (scene === 'battle' && wasRunning && cloud.hidden) resumeBattle();
       updatePointer();
     }
     function stop() {
-      ++epoch; stopVoice(); stopMonitor(); video.pause(); video.removeAttribute('src'); video.load();
+      ++epoch; tailLoop = false; stopMonitor(); video.pause(); video.removeAttribute('src'); video.load();
       hideGuide(); frame.removeAttribute('src'); frameWindow=frameDocument=null; intro=false;
       setScene('home');
     }

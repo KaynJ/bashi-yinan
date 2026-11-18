@@ -7,10 +7,10 @@
   <title>八十一难 · 西游异世行记</title>
   <link rel="icon" href="assets/seal.svg" type="image/svg+xml">
   <link rel="stylesheet" href="home.css">
-  <link rel="stylesheet" href="flow.css?v=0.2">
-  <script src="flow-data.js?v=0.2" defer></script>
+  <link rel="stylesheet" href="flow.css?v=0.3">
+  <script src="flow-data.js?v=0.3" defer></script>
   <script src="model.js" defer></script>
-  <script src="flow.js?v=0.2" defer></script>
+  <script src="flow.js?v=0.3" defer></script>
   <script src="home.js" defer></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
         <button class="menu-item" data-panel="settings"><span class="menu-top"><span class="menu-icon" data-icon="settings"></span><span class="menu-number">伍</span></span><span class="menu-title">系统设置</span><span class="menu-subtitle">让此间更合心意</span><span class="menu-rule"></span></button>
         <button class="menu-item" data-panel="guide"><span class="menu-top"><span class="menu-icon" data-icon="scroll"></span><span class="menu-number">陆</span></span><span class="menu-title">玩法介绍</span><span class="menu-subtitle">行前，先知一二</span><span class="menu-rule"></span></button>
       </nav>
-      <footer class="footer"><span><kbd>←</kbd><kbd>→</kbd> 选择 <span class="footer-gap"><kbd>Enter</kbd> 确认</span> <span class="footer-gap"><kbd>Esc</kbd> 返回</span></span><span>本地试玩 <b>·</b> v0.1</span></footer>
+      <footer class="footer"><span><kbd>←</kbd><kbd>→</kbd> 选择 <span class="footer-gap"><kbd>Enter</kbd> 确认</span> <span class="footer-gap"><kbd>Esc</kbd> 返回</span></span><span>自渡工作室 <b>·</b> River Yang</span></footer>
     </section>
   </main>
   <dialog id="panel" aria-labelledby="panel-title">
@@ -54,8 +54,8 @@
     </div>
   </dialog>
   <section class="story-stage" id="story-stage" hidden aria-label="序章剧情">
-    <video id="story-video" playsinline preload="none" poster="assets/home-poster.jpg" aria-label="序章剧情" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
-    <header class="story-bar"><span id="story-chapter">序章 <b>·</b> 夕照西行</span><div class="cinema-actions"><button class="text-button" id="story-audio" aria-pressed="true">语音 · 开</button><button class="text-button" id="story-pause">暂停</button><button class="text-button" id="story-home">返回首页</button></div></header>
+    <video id="story-video" playsinline preload="auto" aria-label="序章剧情" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
+    <header class="story-bar"><span id="story-chapter">序章 <b>·</b> 夕照西行</span><div class="cinema-actions"><button class="text-button" id="story-audio" aria-pressed="true">原声 · 开</button><button class="text-button" id="story-pause">暂停</button><button class="text-button" id="story-home">返回首页</button></div></header>
     <button class="solid-button story-next" id="story-next">跳过本段 <span>→</span></button>
     <p class="story-state" id="story-state" role="status" hidden></p>
     <button class="story-replay" id="story-replay" hidden>点击继续播放</button>
@@ -66,7 +66,7 @@
   </section>
   <section class="world-stage" id="world-stage" hidden aria-label="五涡选择">
     <header class="story-bar"><span>序章 <b>·</b> 五涡之间</span><button class="text-button" id="world-home">返回首页</button></header>
-    <div class="gate-landscape" id="gate-landscape"><img src="assets/world-gates.jpg" alt="断岩之间的淡金、朱红、紫色、青绿、银蓝五道漩涡"><div id="world-gates"></div></div>
+    <div class="gate-landscape" id="gate-landscape"><div id="world-gates"></div></div>
     <div class="route-strip" id="route-strip" role="group" aria-label="选择追寻的同伴"></div>
   </section>
   <div class="guide-focus" id="guide-focus" hidden aria-hidden="true"></div>
@@ -74,9 +74,8 @@
   <aside class="cloud-guide" id="cloud-guide" hidden aria-label="守护者引导">
     <svg class="cloud-card-bg" viewBox="0 0 1200 230" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="cloud-paper" x2="0" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#e9eddf"/></linearGradient></defs><path d="M65 193C22 196 4 178 12 153C-7 123 9 97 40 91C30 59 62 38 98 49C113 17 155 14 179 39C201 7 245 9 271 36C304 11 342 16 357 39C387 20 427 23 450 43C486 24 521 23 549 40C580 19 620 21 650 44C677 22 718 20 749 41C779 15 818 23 840 43C870 18 906 21 931 42C956 16 999 23 1017 46C1042 28 1081 34 1092 60C1125 44 1163 65 1156 94C1195 89 1213 128 1188 151C1205 186 1166 213 1134 195C1105 222 1062 214 1042 202C1009 226 973 214 947 204C915 225 880 214 854 204C825 226 786 216 762 203C731 227 691 218 667 203C635 225 600 219 571 203C543 225 502 216 480 202C446 224 412 217 386 201C354 225 320 213 295 202C262 221 227 214 206 201C177 220 137 212 122 196C101 210 79 208 65 193Z" fill="url(#cloud-paper)" stroke="#c1b58f" stroke-width="1.1"/><path d="M270 52C291 44 313 47 323 58M915 194C940 188 958 190 976 195M54 151C41 135 47 117 65 111" fill="none" stroke="#a8b8a5" opacity=".5"/></svg>
     <img class="guardian-bust" src="assets/guardian-bust-v1.png" alt="守护者正面半身像">
-    <div class="cloud-guide-content"><div class="cloud-heading"><span class="guardian-name">守护者</span><span id="guide-step-label"></span><button id="guide-voice" class="guide-voice" title="重听这段旁白" aria-label="重听这段旁白">重听</button></div><h2 id="guide-title"></h2><p id="guide-text" aria-live="polite"></p><div class="cloud-guide-bottom"><span id="guide-task" role="status"></span><div class="actions"><button class="text-button" id="guide-alternative" hidden></button><button class="solid-button" id="guide-next">继续 <span>→</span></button></div></div></div>
+    <div class="cloud-guide-content"><div class="cloud-heading"><span class="guardian-name">守护者</span><span id="guide-step-label"></span></div><h2 id="guide-title"></h2><p id="guide-text" aria-live="polite"></p><div class="cloud-guide-bottom"><span id="guide-task" role="status"></span><div class="actions"><button class="text-button" id="guide-alternative" hidden></button><button class="solid-button" id="guide-next">继续 <span>→</span></button></div></div></div>
   </aside>
-  <audio id="narration-audio" preload="auto"></audio>
   <div class="transition" id="transition" aria-hidden="true"><div class="cloud-veil"></div><div class="cloud-bank cloud-left"></div><div class="cloud-bank cloud-right"></div><div class="cloud-bank cloud-top"></div><div class="cloud-bank cloud-bottom"></div><span>云起处，又一程。</span></div>
   <div class="toast" id="toast" role="status" hidden></div>
   <input type="file" id="import-save" accept="application/json,.json" hidden>

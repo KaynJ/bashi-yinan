@@ -103,17 +103,18 @@
   function renderSettings() {
     let html = '';
     if (currentTab === 'display') html = range('画面亮度', '调整首页动态背景的明暗。', 'brightness', 65, 120) + toggle('动态背景', '循环播放夕照山脊；关闭后显示静态画面。', 'animated') + toggle('减少动态效果', reducedPreference ? '系统已启用减少动态效果，当前优先遵循系统偏好。' : '静止首页背景，简化界面与转场动画。', 'reduced') + `<div class="setting-row"><div><strong>显示模式</strong><small>全屏欣赏此间山海。</small></div><div class="setting-control">${button(document.fullscreenElement ? '退出全屏' : '进入全屏', 'fullscreen', 'outline-button')}</div></div>`;
-    if (currentTab === 'audio') html = toggle('首页声音', '首页首次进入默认静音，可在右上角快速开启。', 'sound') + toggle('旁白与剧情声音', '守护者中文旁白、教学讲解与剧情原声。', 'narration') + range('主音量', '首页环境声、界面提示音与剧情声音。', 'master') + range('首页环境声', '使用夕照山脊原片自带的声音。', 'ambience') + range('界面提示音', '点击菜单时的轻提示。', 'effects');
+    if (currentTab === 'audio') html = toggle('首页声音', '首页首次进入默认静音，可在右上角快速开启。', 'sound') + toggle('剧情原声', '播放剧情视频自带的声音。', 'narration') + range('主音量', '首页环境声、界面提示音与剧情声音。', 'master') + range('首页环境声', '使用夕照山脊原片自带的声音。', 'ambience') + range('界面提示音', '点击菜单时的轻提示。', 'effects');
     if (currentTab === 'interface') html = `<div class="setting-row"><div><label for="setting-textSize">界面字号</label><small>调整菜单窗口中的文字大小。</small></div><div class="setting-control"><select id="setting-textSize" data-setting="textSize">${[100, 110, 120].map(n => `<option value="${n}" ${draftSettings.textSize === n ? 'selected' : ''}>${n}% ${n === 100 ? '· 标准' : n === 110 ? '· 较大' : '· 大号'}</option>`).join('')}</select></div></div>` + toggle('文字增强对比', '提升提示与窗口文字的可读性。', 'contrast') + `<div class="guide-callout">西行路远，请按自己的步调前行。<br>预览中的设置将在点击“应用设置”后保存。</div>`;
     content.innerHTML = tabs([['display', '画面'], ['audio', '声音'], ['interface', '界面']], currentTab) + tabBody(`<div class="setting-group">${html}</div>`) + footer('调整后即时预览。取消或关闭窗口会恢复原设置。', button('恢复默认', 'defaults', 'text-button') + button('取消', 'close', 'outline-button') + button('应用设置', 'save-settings'));
   }
   function codexEntries() {
-    if (currentTab === 'heroes') return M.HEROES;
+    if (currentTab === 'heroes') return state.slots.some(s => s && ['aftermath','worlds'].includes(s.phase))
+      ? [...M.HEROES, {...M.ENEMIES[0], role:'法师', description:'白虎岭一战后，白骨精收起骨扇，加入了西行队伍。'}] : M.HEROES;
     if (currentTab === 'enemies') return M.ENEMIES;
     if (currentTab === 'worlds') return [{ id: 'homeland', name: '西行故土', role: '序章', description: '夕照铺满山脊，师徒仍沿着熟悉的路向西。你以守护者的身份，注视此间天地。', tactic: '从师徒五人的一场战斗开始，认识布阵与自动战斗。' }, { id: 'unknown-world', name: '未历之境', locked: true }];
     return [];
   }
-  const heroAsset = id => `../战斗表现小样/assets/${id === 'wukong' ? 'chibi-hold-v02' : 'chibi-v01'}/${id}/front.png`;
+  const heroAsset = id => id === 'bone-boss' ? '../战斗表现小样/白骨精初稿/v0.2/assets/boss/body.png' : `../战斗表现小样/assets/${id === 'wukong' ? 'chibi-hold-v02' : 'chibi-v01'}/${id}/front.png`;
   function renderCodex() {
     const entries = codexEntries(), hasEnemies = state.library.includes('bone');
     const selected = entries[selectedEntry] || entries[0];
@@ -122,7 +123,7 @@
     let html;
     if (currentTab === 'treasures') html = `<div class="empty-state">${icon('scroll')}<p>宝物有灵，尚待相逢。</p><small>在旅途中获得法宝后，会在这里留下记录。</small></div>`;
     else html = `<div class="codex-layout"><div class="codex-list">${entries.map((e, i) => `<button class="codex-card" data-action="codex-entry" data-index="${i}" aria-pressed="${i === selectedEntry}" aria-label="${isLocked(e) ? '尚未相逢的条目' : e.name}">${currentTab === 'heroes' ? `<img src="${heroAsset(e.id)}" alt="${e.name}" loading="lazy">` : `<span class="locked-art">${isLocked(e) ? '？' : currentTab === 'worlds' ? '山' : '妖'}</span>`}<span class="codex-name">${isLocked(e) ? '尚未相逢' : e.name}</span><small>${isLocked(e) ? '随旅程解锁' : e.role}</small></button>`).join('')}</div><article class="codex-detail" aria-live="polite">${isLocked(selected) ? `<span class="unknown-mark">缘</span><span class="tag">待相逢</span><h3>山海尚远</h3><p style="margin-top:17px">有些名字，要待亲身走过，才能知晓。</p><p class="unlock-note">${currentTab === 'enemies' ? '进入白骨岭教学战后，收录相应敌人。' : '抵达新的世界后，记录将在此展开。'}</p>` : `${currentTab === 'heroes' ? `<img class="hero-art" src="${heroAsset(selected.id)}" alt="${selected.name}全身形象">` : ''}<span class="tag">${currentTab === 'heroes' ? '初识同伴' : '已知记录'}</span><h3>${selected.name}</h3><p class="hero-role">${selected.role}${selected.weapon ? ' / ' + selected.weapon : ''}</p><p>${selected.description}</p><h4>布阵手记</h4><p>${selected.tactic}</p><p class="unlock-note">${currentTab === 'heroes' ? '人物简介可提前查阅；相逢后的经历，将随剧情补记。' : '记录来自已抵达的旅程节点。'}</p>`}</article></div>`;
-    content.innerHTML = `<p class="panel-lead">把见过的人、遇过的妖、走过的天地，收进这一本行记。</p>` + tabs([['heroes', '人物志', '5'], ['enemies', '妖怪录'], ['treasures', '法宝集'], ['worlds', '世界志']], currentTab) + tabBody(html) + footer(currentTab === 'treasures' ? '尚未收录法宝。' : `${currentTab === 'heroes' ? '初识' : '已知'} ${known} / ${entries.length} 项。未解锁条目隐藏身份与详情。`, button('合上行记', 'close', 'outline-button'));
+    content.innerHTML = `<p class="panel-lead">把见过的人、遇过的妖、走过的天地，收进这一本行记。</p>` + tabs([['heroes', '人物志'], ['enemies', '妖怪录'], ['treasures', '法宝集'], ['worlds', '世界志']], currentTab) + tabBody(html) + footer(currentTab === 'treasures' ? '尚未收录法宝。' : `${currentTab === 'heroes' ? '初识' : '已知'} ${known} / ${entries.length} 项。未解锁条目隐藏身份与详情。`, button('合上行记', 'close', 'outline-button'));
   }
   function boardDiagram() {
     const cells = (team, positions) => `<div class="diagram-grid">${Array.from({ length: 25 }, (_, i) => `<span class="${positions[i] ? team : ''}">${positions[i] || ''}</span>`).join('')}</div>`;

@@ -7,3 +7,10 @@
 @media(max-height:650px) and (min-width:601px){.cloud-guide{min-height:160px;bottom:10px}.cloud-guide-content{padding:16px 28px 10px 178px}.guardian-bust{height:200px;width:150px}.cloud-guide h2{font-size:19px;margin-bottom:4px}.cloud-guide #guide-text{font-size:12px}.cloud-heading{margin-bottom:3px}.cloud-guide-bottom{margin-top:8px}.battle-stage.guided{padding-bottom:195px}.route-strip{bottom:205px}}
 .battle-stage.guided{padding-bottom:calc(var(--guide-size,205px) + 34px)}
 .transition.revealing{pointer-events:auto}
+
+.footer>span:last-child{color:#e4dbc4;font-size:12px;white-space:nowrap}
+#gate-landscape{inset:0}
+#gate-landscape>video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+#world-stage .route-strip{bottom:4%}
+body:has(#world-stage:not([hidden])):has(#cloud-guide:not([hidden])) .route-strip{bottom: min(38vh, 260px)}
+.cloud-guide #guide-text{max-height:30vh;overflow:auto}
