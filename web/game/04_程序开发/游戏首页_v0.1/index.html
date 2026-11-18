@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="flow.css?v=0.3">
   <script src="flow-data.js?v=0.3" defer></script>
   <script src="model.js" defer></script>
-  <script src="flow.js?v=0.3" defer></script>
+  <script src="journey-loader.js" defer></script>
+  <script src="flow.js?v=0.4" defer></script>
   <script src="home.js" defer></script>
 </head>
 <body>
@@ -53,6 +54,9 @@
       <div id="panel-content" class="panel-content"></div>
     </div>
   </dialog>
+  <section id="journey-loading" class="journey-loading" hidden aria-labelledby="loading-title">
+    <div><h2 id="loading-title">正在准备旅程</h2><p id="loading-detail" role="status"></p><progress id="loading-bar" max="100" value="0" aria-label="资源加载进度"></progress><output id="loading-percent">0%</output><div><button class="solid-button" id="loading-retry" hidden>重新加载</button><button class="text-button" id="loading-home">返回首页</button></div></div>
+  </section>
   <section class="story-stage" id="story-stage" hidden aria-label="序章剧情">
     <video id="story-video" playsinline preload="auto" aria-label="序章剧情" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
     <header class="story-bar"><span id="story-chapter">序章 <b>·</b> 夕照西行</span><div class="cinema-actions"><button class="text-button" id="story-audio" aria-pressed="true">原声 · 开</button><button class="text-button" id="story-pause">暂停</button><button class="text-button" id="story-home">返回首页</button></div></header>

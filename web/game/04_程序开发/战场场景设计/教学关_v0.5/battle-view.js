@@ -33,10 +33,24 @@
     }
     return{sync,reset,layer};
   }
-  function preload(onProgress){
+  function preload(onProgress, timeoutMs = 10000){
     if(preloaded)return preloaded;
     const paths=[...assetPaths(),...Object.values(root.BoneSkin.paths)];let count=0;
-    preloaded=Promise.all(paths.map(path=>new Promise(resolve=>{const img=new root.Image();let done=false;const timer=setTimeout(()=>finish(false),10000);function finish(ok){if(done)return;done=true;clearTimeout(timer);onProgress?.(++count,paths.length);resolve({path,ok});}img.onload=()=>finish(true);img.onerror=()=>finish(false);img.src=path;})));
+    preloaded=Promise.all(paths.map(path=>new Promise(resolve=>{
+      const img=new root.Image();
+      let done=false;
+      const timer=setTimeout(()=>finish(false), timeoutMs);
+      function finish(ok){
+        if(done)return;
+        done=true;
+        clearTimeout(timer);
+        onProgress?.(++count,paths.length);
+        resolve({path,ok});
+      }
+      img.onload=()=>finish(true);
+      img.onerror=()=>finish(false);
+      img.src=path;
+    })));
     return preloaded;
   }
   function create({unitLayer,effectLayer,icon,onFrame=()=>{},onResult=()=>{},onAssetError=()=>{}}){

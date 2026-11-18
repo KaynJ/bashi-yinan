@@ -8,7 +8,7 @@ function target(file){const relative=path.relative(source,file);if(relative.star
 function copy(file){const dest=target(file);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(file,dest);copied.add(file);}
 function tree(dir,accept=()=>true){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())tree(file,accept);else if(accept(file))copy(file);}}
 fs.mkdirSync(dist,{recursive:true});
-for(const file of ['index.html','home.css','home.js','model.js','flow.css','flow.js','flow-data.js'])copy(path.join(home,file));
+for(const file of ['index.html','home.css','home.js','model.js','flow.css','flow.js','flow-data.js','journey-loader.js'])copy(path.join(home,file));
 tree(path.join(home,'assets'),file=>/\.(?:png|jpg|svg)$/.test(file));
 copy(path.join(battle,'index.html'));
 const html=fs.readFileSync(path.join(battle,'index.html'),'utf8');

@@ -12,6 +12,8 @@
     let targetSelector = '', wasRunning = false, tailLoop = false;
     let pausedByUser = false, lastWasPlaying = false, selectedRoute = null;
     let horseInspected = false;
+    const loader = createJourneyLoader(frame);
+    let loadController = null, pendingRecord = null;
     const history = [];
     const save = () => getState().slots[getState().activeSlot];
     const settings = () => getState().settings;
@@ -55,6 +57,7 @@
     function setScene(next) {
       scene = next; suspended = false; pausedByUser = false;
       $('#home').inert = next !== 'home';
+      $('#journey-loading').hidden = next !== 'loading';
       $('#story-stage').hidden = next !== 'story';
       $('#battle-stage').hidden = next !== 'battle';
       $('#world-stage').hidden = next !== 'worlds';
@@ -82,14 +85,16 @@
       if (!record) return;
       stopMonitor(); clip = id;
       const changed = await change(async () => {
-        setScene('story'); frame.removeAttribute('src'); frameWindow = frameDocument = null;
+        setScene('story');
+        if (id >= 5) frame.removeAttribute('src');
+        frameWindow = frameDocument = null;
         checkpoint(id <= 4 ? 'prologue' : 'aftermath', id);
         history.push(id); $('#story-chapter').textContent = '序章 · ' + record.title;
         $('#story-stage').prepend(video); tailLoop = false; intro = false;
         $('#story-next').hidden = $('#story-pause').hidden = false;
         settingsChanged(); video.controls = false;
         video.setAttribute('aria-label', record.title);
-        video.src = '../../02_视频生成/序章/04_采用片段/' + id + '.mp4'; video.load();
+        video.src = loader.movie(id); video.load();
         $('#story-state').hidden = true; $('#story-replay').hidden = true;
         const ok = await readyVideo();
         if (!ok) { $('#story-state').hidden = false; $('#story-state').textContent = '本段暂时无法播放，可点击“跳过本段”继续。'; }
@@ -153,7 +158,7 @@
       const session = ++epoch; completed = false; dismissed = false; lesson = -1; waiting = '';
       const changed = await change(async () => {
         setScene('battle'); checkpoint('tutorial', 4); history.push('tutorial');
-        frame.src = '../战场场景设计/教学关_v0.5/index.html?campaign=1';
+        frame.contentWindow.TeachingReview.syncLayout();
         await waitForFrame(session);
       });
       if (!changed || session !== epoch) return;
@@ -314,7 +319,7 @@
         $('#gate-landscape').prepend(video);
         if (!tailLoop) {
           tailLoop = true;
-          video.src = '../../02_视频生成/序章/04_采用片段/6.mp4';
+          video.src = loader.movie(6);
           video.addEventListener('loadedmetadata', () => { if (scene === 'worlds') loopTail(); }, {once:true});
           video.load();
         } else if (video.paused) loopTail();
@@ -356,10 +361,50 @@
     }
     function stop() {
       ++epoch; tailLoop = false; stopMonitor(); video.pause(); video.removeAttribute('src'); video.load();
-      hideGuide(); frame.removeAttribute('src'); frameWindow=frameDocument=null; intro=false;
+      loadController?.abort(); loadController = pendingRecord = null;
+      hideGuide(); loader.clear(); frameWindow=frameDocument=null; intro=false;
       setScene('home');
     }
-    function launch(record) {
+    $('#loading-home').addEventListener('click', () => {
+      stop();
+      $('#main-menu button').focus();
+    });
+    $('#loading-retry').addEventListener('click', () => launch(pendingRecord));
+    async function launch(record) {
+      if (!record || loadController) return;
+      pendingRecord = record;
+      const controller = new AbortController();
+      loadController = controller;
+      $('#loading-home').disabled = false;
+      setScene('loading');
+      $('#loading-home').focus();
+      const retry = $('#loading-retry'), detail = $('#loading-detail');
+      retry.hidden = true;
+      detail.textContent = ['tutorial','prologue'].includes(record.phase)
+        ? '正在加载剧情视频与教学战场…' : '正在加载后续剧情视频…';
+      const timeout = setTimeout(() => controller.abort(), 240000);
+      try {
+        const preparation = loader.prepare(record, controller.signal, percent => {
+          $('#loading-bar').value = percent;
+          $('#loading-percent').textContent = percent + '%';
+        });
+        await Promise.race([preparation, new Promise((_, reject) => {
+          controller.signal.addEventListener('abort', () => reject(controller.signal.reason), {once:true});
+        })]);
+        controller.signal.throwIfAborted();
+        $('#loading-home').disabled = true;
+      } catch (error) {
+        if (loadController !== controller) return;
+        controller.abort();
+        detail.textContent = '资源未能加载完成，请检查网络后重试。';
+        retry.hidden = false;
+        retry.focus();
+        return;
+      } finally {
+        clearTimeout(timeout);
+        if (loadController === controller) loadController = null;
+      }
+      pendingRecord = null;
       if (record.phase==='tutorial') return openBattle();
       if (record.phase==='worlds') return openWorlds();
       return playClip(record.clip || (record.phase==='aftermath'?5:1));

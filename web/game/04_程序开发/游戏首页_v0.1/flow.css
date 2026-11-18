@@ -14,3 +14,5 @@
 #world-stage .route-strip{bottom:4%}
 body:has(#world-stage:not([hidden])):has(#cloud-guide:not([hidden])) .route-strip{bottom: min(38vh, 260px)}
 .cloud-guide #guide-text{max-height:30vh;overflow:auto}
+
+.journey-loading{position:fixed;inset:0;z-index:17;display:grid;place-items:center;background:linear-gradient(0deg,#15251ff5,#172820dd),url("assets/home-poster.jpg") center/cover;color:#f0e8d6;text-align:center}.journey-loading[hidden]{display:none}.journey-loading>div{width:min(82vw,420px)}.journey-loading h2{font-size:clamp(24px,4vw,36px);font-weight:500;letter-spacing:.12em}.journey-loading progress{width:78%;height:8px;accent-color:#c7b985}.journey-loading output{margin-left:12px;font-variant-numeric:tabular-nums}.journey-loading button{margin:20px 4px 0}.journey-loading p{font-size:14px;color:#d7d3be}

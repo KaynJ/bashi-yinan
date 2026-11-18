@@ -12,7 +12,23 @@ async function nextLesson(page,number){await page.locator('#guide-next').click()
   browser=await chromium.launch({channel:'chrome',headless:true});const context=await browser.newContext({viewport:{width:1600,height:1000}});const page=await context.newPage();
   page.on('pageerror',e=>errors.push(String(e)));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))missing.push(r.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>window.HomeUI);
-  await page.locator('[data-panel="start"]').click();await page.locator('[data-action="begin"]').click();await ready(page,1);
+  // Hold the final movie to verify that even the first scene waits for the full journey.
+  let attempts=0;
+  let release;
+  const held=new Promise(resolve=>release=resolve);
+  await page.route('**/6.mp4',async route=>{
+    if (++attempts===1) {await held;await route.abort();} else await route.continue();
+  });
+  await page.locator('[data-panel="start"]').click();await page.locator('[data-action="begin"]').click();
+  await page.waitForFunction(()=>CampaignReview.scene==='loading' && document.querySelector('#loading-bar').value>0);
+  assert.deepEqual(await page.evaluate(()=>CampaignReview.history),[]);
+  assert.equal(await page.locator('#story-stage').isVisible(),false);
+  release();
+  await page.locator('#loading-retry').click();
+  await ready(page,1);
+  assert.equal(await page.locator('#loading-bar').evaluate(el=>el.value),100);
+  assert.ok(await page.locator('#story-video').evaluate(v=>v.src.startsWith('blob:')));
+  check('all remaining media gates playback; a failed download can be retried');
   assert.equal(await page.locator('#cloud-guide').isVisible(),false);
   assert.equal(await page.locator('audio, #story-video[poster]').count(),0);
   await page.waitForFunction(()=>document.querySelector('#story-video').currentTime>0);

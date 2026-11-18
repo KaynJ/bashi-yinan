@@ -59,7 +59,7 @@
     $('#sound-toggle').innerHTML = icon(settings.sound ? 'sound' : 'muted');
     $('#sound-toggle').setAttribute('aria-label', settings.sound ? '关闭背景声音' : '开启背景声音');
     $('#sound-toggle').title = settings.sound ? '关闭背景声音' : '开启背景声音';
-    if (!settings.animated || settings.reduced || reducedPreference || document.hidden || !$('#story-stage').hidden || !$('#battle-stage').hidden || !$('#world-stage').hidden) bg.pause();
+    if (!settings.animated || settings.reduced || reducedPreference || document.hidden || !$('#journey-loading').hidden || !$('#story-stage').hidden || !$('#battle-stage').hidden || !$('#world-stage').hidden) bg.pause();
     else bg.play().catch(() => { if (!bg.muted) { bg.muted = true; bg.play().catch(() => {}); } });
     bg.style.opacity = settings.animated && !settings.reduced && !reducedPreference ? '1' : '0';
   }
@@ -255,6 +255,10 @@
       event.preventDefault(); const all = [...content.querySelectorAll('[role="tab"]')], i = all.indexOf(target), next = event.key === 'Home' ? 0 : event.key === 'End' ? all.length - 1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length; all[next].click(); return;
     }
     if (panel.open) return;
+    if (campaign.scene === 'loading') {
+      if (event.key === 'Escape') $('#loading-home').click();
+      return;
+    }
     if (campaign.scene !== 'home') {
       if (event.key === 'Escape') { event.preventDefault(); requestReturn(); }
       else if (event.code === 'Space' && campaign.scene === 'story' && event.target.tagName !== 'BUTTON') { event.preventDefault(); $('#story-pause').click(); }
