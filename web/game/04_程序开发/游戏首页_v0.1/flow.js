@@ -33,6 +33,7 @@
       $('#story-audio').setAttribute('aria-pressed', String(value.narration));
     }
     function hideGuide() {
+      frameDocument?.documentElement.removeAttribute('data-lesson');
       cloud.hidden = true; $('#story-stage').classList.remove('guide-open');
       $('#battle-stage').classList.remove('guided'); focus.hidden = true; arrow.toggleAttribute('hidden', true);
       targetSelector = '';
@@ -41,6 +42,7 @@
         targetSelector = target; taskDone = !required;
       $('#guide-next').hidden = false; nextAction = next; alternativeAction = alternative; cloud.hidden = false;
       cloud.dataset.record = record.id || '';
+      if(scene === 'battle' && frameDocument) frameDocument.documentElement.dataset.lesson = record.id;
       $('#story-stage').classList.toggle('guide-open', scene === 'story');
       $('#battle-stage').classList.toggle('guided', scene === 'battle');
       $('#guide-step-label').textContent = label;
@@ -216,7 +218,8 @@
       if (!targetSelector || !frameDocument || scene !== 'battle') return;
       const target = frameDocument.querySelector(targetSelector); if (!target) return;
       const ui = frameWindow.TeachingUI;
-      if (frameWindow.innerWidth <= 700 && target.closest('#roster-panel,#encounter-panel,#equipment-panel')) {
+      if (frameWindow.innerWidth <= 700 && target.closest('.battle-controls')) ui?.closePanels();
+      else if (frameWindow.innerWidth <= 700 && target.closest('#roster-panel,#encounter-panel,#equipment-panel')) {
         ui?.openPanel(target.closest('#roster-panel,#encounter-panel,#equipment-panel').id,{toggle:false});
       } else if (target.closest('#stats-panel')) ui?.openPanel('stats-panel', {toggle:false});
       else if (target.closest('#lineup-panel') || target.closest('.battle-controls')) ui?.openPanel('lineup-panel', { toggle: false });
@@ -416,7 +419,7 @@
     }
     document.addEventListener('visibilitychange',()=>{if(scene==='home')return;if(document.hidden)suspend();else resume();});
     window.addEventListener('resize',()=>{positionGates();if(!cloud.hidden&&scene==='battle'){ensureTarget();updatePointer();}});
-    new ResizeObserver(()=>{if(scene==='battle'&&!cloud.hidden){$('#battle-stage').style.setProperty('--guide-size',cloud.offsetHeight+'px');updatePointer();}}).observe(cloud);
+    new ResizeObserver(()=>{if(scene==='battle'&&!cloud.hidden){updatePointer();}}).observe(cloud);
     window.CampaignReview=Object.freeze({get scene(){return scene;},get clip(){return clip;},get lesson(){return lesson;},get history(){return [...history];},get intro(){return intro;},get changing(){return changing;}});
     return {launch,stop,suspend,resume,settingsChanged,returnMessage,get scene(){return scene;}};
   }

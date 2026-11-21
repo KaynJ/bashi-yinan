@@ -40,7 +40,7 @@ async function nextLesson(page,number){await page.locator('#guide-next').click()
   }
   await page.waitForFunction(()=>CampaignReview.scene==='battle'&&CampaignReview.lesson===0&&!CampaignReview.changing);
   assert.deepEqual(await page.evaluate(()=>CampaignReview.history),[1,2,3,4,'tutorial']);
-  await page.waitForFunction(()=>document.getElementById('battle-frame').getBoundingClientRect().bottom<=document.getElementById('cloud-guide').getBoundingClientRect().top-5);
+  await page.waitForFunction(()=>document.getElementById('battle-frame').getBoundingClientRect().bottom>=innerHeight-2 && document.getElementById('cloud-guide').getBoundingClientRect().bottom<=innerHeight);
   await shot(page,'02-教学-阵地概览');check('natural end and skip both preserve 1 -> 2 -> 3 -> 4 -> tutorial order');
   const f=page.frameLocator('#battle-frame');
   const bframe=page.frames().find(f=>f.url().includes('campaign=1'));
@@ -81,6 +81,15 @@ async function nextLesson(page,number){await page.locator('#guide-next').click()
   await mobile.waitForFunction(()=>CampaignReview.lesson===0&&!CampaignReview.changing);await mobile.locator('#guide-next').click();
   await mobile.waitForFunction(()=>{const f=document.getElementById('battle-frame'),t=f.contentDocument.querySelector('#enemy-roster [data-enemy="bone-boss"]'),r=t.getBoundingClientRect(),fr=f.getBoundingClientRect(),g=document.getElementById('guide-focus').getBoundingClientRect();return Math.abs(g.top-(fr.top+r.top-5))<2&&Math.abs(g.height-(r.height+10))<3;});
   await shot(mobile,'11-手机-箭头教学');
+  const mobileBattle=mobile.frameLocator('#battle-frame');
+  await mobileBattle.locator('#enemy-roster [data-enemy="bone-boss"]').click();
+  await mobile.waitForFunction(()=>CampaignReview.lesson===2);
+  await mobileBattle.locator('#roster-grid [data-hero="bailongma"]').click();
+  await mobile.waitForFunction(()=>CampaignReview.lesson===3);
+  await mobileBattle.locator('#board-grid [data-col="2"][data-row="6"]').click();
+  await mobile.waitForFunction(()=>CampaignReview.lesson===4);
+  for (let step=5;step<=7;step++) await nextLesson(mobile,step);
+  await mobileBattle.locator('#phase-toggle').click({trial:true});
   await mobile.locator('#guide-toggle').click();assert.equal(await mobile.locator('#cloud-guide').isVisible(),false);
   const mf=mobile.frameLocator('#battle-frame');await mf.locator('#phase-toggle').click();await mobile.waitForFunction(()=>document.getElementById('battle-frame').contentWindow.TeachingReview.battle?.status==='running');
   // Lose through the existing engine with a one-person lineup in an independent retry below; here verify skip never enters clip 5.

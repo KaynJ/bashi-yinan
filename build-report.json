@@ -1,36 +1,37 @@
 {
+  "videoProfile": "540p24-crf26",
   "files": 118,
-  "totalMiB": 44.56,
+  "totalMiB": 14.64,
   "videos": [
     {
       "clip": 1,
       "originalBytes": 15778526,
-      "publishedBytes": 2173688
+      "publishedBytes": 937018
     },
     {
       "clip": 2,
       "originalBytes": 12791145,
-      "publishedBytes": 2501996
+      "publishedBytes": 1097884
     },
     {
       "clip": 3,
       "originalBytes": 29024019,
-      "publishedBytes": 5568536
+      "publishedBytes": 2540909
     },
     {
       "clip": 4,
       "originalBytes": 30492728,
-      "publishedBytes": 6124252
+      "publishedBytes": 2809881
     },
     {
       "clip": 5,
       "originalBytes": 21300728,
-      "publishedBytes": 3639979
+      "publishedBytes": 1484703
     },
     {
       "clip": 6,
       "originalBytes": 17008312,
-      "publishedBytes": 3426780
+      "publishedBytes": 1489962
     }
   ]
 }

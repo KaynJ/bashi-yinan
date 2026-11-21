@@ -12,3 +12,17 @@ dialog{padding:0;border:1px solid #9a8563;width:min(1080px,calc(100% - 72px));ma
 @media(max-width:760px){.main-menu{grid-template-columns:repeat(3,minmax(0,1fr))}.menu-item{padding-left:10px;padding-right:4px}.menu-title{font-size:20px;letter-spacing:.06em}.menu-rule{left:10px}}
 @media(max-width:380px){.menu-title{font-size:18px}.title-lockup h1{font-size:60px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.transition,.menu-rule,.landscape video{transition:none}}
+
+@media(max-width:760px) and (orientation:portrait){
+ .home{min-height:max(580px,100svh);height:100dvh}
+ .menu-region{bottom:max(15px,env(safe-area-inset-bottom));left:5%;right:5%}
+ .main-menu{gap:6px}.menu-item{min-width:0}
+ .panel-content{overscroll-behavior:contain}
+}
+@media(orientation:landscape) and (max-height:500px){
+ .home{min-height:300px;height:100dvh}.poem,.title-caption,.journey-line,.footer>span:first-child{display:none}
+ .main-menu{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+ .menu-region{left:3%;right:3%;bottom:8px}.menu-item{min-height:0;height:auto;padding:9px}.menu-title{font-size:16px}
+ .title-lockup{top:18%;left:6%}.title-lockup h1{font-size:clamp(42px,8vw,68px)}
+ .footer{padding-top:4px;margin-top:6px}
+}

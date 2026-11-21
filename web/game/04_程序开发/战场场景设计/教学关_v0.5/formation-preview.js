@@ -15,7 +15,9 @@
    });
    frame(performance.now());
   }
-  function frame(now){if(!state||state.combat)return;if(!document.hidden){battle.time=(now-started)/1000;battle.effects=[];battle.projectiles=[];
+  let lastDraw = -Infinity;
+  function frame(now){if(!state||state.combat)return;if(!document.hidden && now-lastDraw>=1000/24 && !root.frameElement?.closest('[hidden]')){
+   lastDraw=now;battle.time=(now-started)/1000;battle.effects=[];battle.projectiles=[];
    for(const u of battle.units){const n=nodes.get(u.id);if(!n)continue;
     const definitions=[{id:'attack',duration:u.attackDuration||.65,windup:u.attackWindup||.28},...u.skills],cycle=definitions.reduce((sum,a)=>sum+a.duration+.5,0),time=(battle.time+n.index*.41)%cycle;
     let offset=0,a=definitions[0];for(const s of definitions){a=s;if(time<offset+s.duration+.5)break;offset+=s.duration+.5;}

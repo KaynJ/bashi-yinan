@@ -113,3 +113,30 @@
  .scene .toast{position:fixed;bottom:7px;left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);padding:7px 12px;font-size:9px}
  .scene.side-panel-open .party-units .unit{width:clamp(21px,13cqw,41.4px);height:clamp(25px,15.26cqw,48.6px)}.scene.side-panel-open .battle-unit[data-team=ally]{--sprite-height:clamp(20px,13cqw,43px)}.scene.side-panel-open .battle-unit[data-team=enemy]{--sprite-height:clamp(18px,12cqw,40px)}.scene.side-panel-open .battle-unit[data-bone=boss]{--sprite-height:clamp(22px,15cqw,49px)}
 }
+@media(max-width:700px){
+ html[data-lesson] .scene .play-layout{grid-template-columns:0 minmax(0,1fr) 0;gap:0}
+ html[data-lesson] .scene .mobile-dock,html[data-lesson] .side-toggle,html[data-lesson] .battle-controls{display:none}
+ html[data-lesson] .scene .lineup-panel,html[data-lesson] .scene .loadout-panel,html[data-lesson] .scene #stats-panel{
+   position:fixed;left:10px;right:10px;top:58px;width:auto;max-width:none;bottom:auto;max-height:40dvh;
+   overflow:auto;z-index:6;background:#f7f0e1f7;box-shadow:0 3px 14px #382e2029
+ }
+ html[data-lesson] .lineup-panel>.side-heading,html[data-lesson] .scene .lineup-panel>.panel-section,
+ html[data-lesson] .scene .lineup-panel>#unit-detail{display:none}
+ html[data-lesson=enemy] .scene .lineup-panel>#encounter-panel,
+ html[data-lesson=horse] .scene .lineup-panel>#roster-panel,
+ html[data-lesson=skills] .scene .lineup-panel>#roster-panel{display:block}
+ html[data-lesson=horse] .scene .lineup-panel>#unit-detail{display:block}
+ html[data-lesson] .scene .enemy-row strong,html[data-lesson] .scene .hero-card>span{font-size:11px}
+ html[data-lesson] .scene .enemy-row img,html[data-lesson] .scene .hero-card>img{height:43px}
+ html[data-lesson=start] .scene .battle-controls,html[data-lesson=cooldowns] .scene .battle-controls{
+   display:flex;position:fixed;top:60px;bottom:auto;left:50%;width:210px;transform:translateX(-50%);z-index:7
+ }
+ html[data-lesson=start] .battle-controls .battle-utilities,html[data-lesson=cooldowns] .battle-controls>.primary{display:none}
+ html[data-lesson=victory] .scene .lineup-panel>#roster-panel{display:block}
+ html[data-lesson] .scene .loadout-panel{display:none}
+ html[data-lesson=items] .scene .loadout-panel{display:block}
+}
+/* During the placement lesson the indicated square must receive a tap,
+   including when a neighbouring sprite or equipment badge overlaps it. */
+html[data-lesson="formation"] .party-units .unit:not([data-unit="bailongma"]),
+html[data-lesson="formation"] .party-units .unit:not([data-unit="bailongma"]) *{pointer-events:none!important}
